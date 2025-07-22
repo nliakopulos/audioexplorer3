@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Location Test - AudioExplorer</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-weight: 500;
+        }
+        .status.success { background: #dcfce7; color: #166534; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.info { background: #dbeafe; color: #1e40af; }
+        .coordinates {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 16px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px 8px 8px 0;
+            min-height: 44px;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .poi-list {
+            margin-top: 20px;
+        }
+        .poi-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+        }
+        .poi-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .poi-details {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .poi-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .poi-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GPS Location Test</h1>
+        <p>Test the GPS location detection functionality for AudioExplorer.</p>
+        
+        <div id="status" class="status info">Ready to test GPS location</div>
+        
+        <div>
+            <button id="startBtn" onclick="startGPS()">Start GPS Tracking</button>
+            <button id="stopBtn" onclick="stopGPS()" disabled>Stop GPS Tracking</button>
+            <button id="testBtn" onclick="testPOIs()" disabled>Test POI Search</button>
+        </div>
+        
+        <div id="coordinates" class="coordinates" style="display: none;">
+            <strong>Current Position:</strong><br>
+            <span id="lat">--</span>, <span id="lon">--</span><br>
+            <span id="accuracy">Accuracy: --</span>
+        </div>
+        
+        <div id="poiList" class="poi-list" style="display: none;">
+            <h3>Points of Interest</h3>
+            <div id="poiItems"></div>
+        </div>
+        
+        <div style="margin-top: 24px; padding: 16px; background: #fef3c7; border-radius: 8px;">
+            <h4>Test Instructions:</h4>
+            <ol>
+                <li>Click "Start GPS Tracking" and allow location access</li>
+                <li>Wait for GPS coordinates to appear</li>
+                <li>Click "Test POI Search" to find nearby points of interest</li>
+                <li>Move around to test continuous tracking (50m threshold)</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let watchId = null;
+        let currentPosition = null;
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function updateCoordinates(position) {
+            currentPosition = position;
+            const coordsEl = document.getElementById('coordinates');
+            const latEl = document.getElementById('lat');
+            const lonEl = document.getElementById('lon');
+            const accuracyEl = document.getElementById('accuracy');
+            
+            latEl.textContent = position.coords.latitude.toFixed(6);
+            lonEl.textContent = position.coords.longitude.toFixed(6);
+            accuracyEl.textContent = `Accuracy: ±${Math.round(position.coords.accuracy)}m`;
+            
+            coordsEl.style.display = 'block';
+            document.getElementById('testBtn').disabled = false;
+        }
+
+        function startGPS() {
+            if (!navigator.geolocation) {
+                updateStatus('Geolocation is not supported by this browser', 'error');
+                return;
+            }
+
+            updateStatus('Requesting location access...', 'info');
+            document.getElementById('startBtn').disabled = true;
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    updateStatus('GPS tracking active', 'success');
+                    updateCoordinates(position);
+                    document.getElementById('stopBtn').disabled = false;
+                },
+                (error) => {
+                    let errorMessage = 'GPS error: ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Location access denied';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Location request timed out';
+                            break;
+                        default:
+                            errorMessage += 'Unknown error';
+                    }
+                    updateStatus(errorMessage, 'error');
+                    document.getElementById('startBtn').disabled = false;
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function stopGPS() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            updateStatus('GPS tracking stopped', 'info');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('testBtn').disabled = true;
+        }
+
+        async function testPOIs() {
+            if (!currentPosition) {
+                updateStatus('No GPS position available', 'error');
+                return;
+            }
+
+            updateStatus('Searching for POIs...', 'info');
+            
+            const lat = currentPosition.coords.latitude;
+            const lon = currentPosition.coords.longitude;
+            const radius = 500; // 500m radius
+
+            try {
+                const query = `
+                    [out:json][timeout:25];
+                    (
+                        node["tourism"](around:${radius},${lat},${lon});
+                        node["historic"](around:${radius},${lat},${lon});
+                        node["amenity"](around:${radius},${lat},${lon});
+                        node["leisure"](around:${radius},${lat},${lon});
+                        node["shop"](around:${radius},${lat},${lon});
+                    );
+                    out body;
+                    >;
+                    out skel qt;
+                `;
+
+                const response = await fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `data=${encodeURIComponent(query)}`,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const pois = [];
+
+                data.elements?.forEach((element) => {
+                    if (element.tags && element.tags.name && element.lat && element.lon) {
+                        const distance = calculateDistance(lat, lon, element.lat, element.lon);
+                        
+                        let wikipediaLink = null;
+                        if (element.tags['wikipedia']) {
+                            const [lang, title] = element.tags['wikipedia'].split(':');
+                            wikipediaLink = `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+                        } else if (element.tags['wikidata']) {
+                            wikipediaLink = `https://www.wikidata.org/wiki/${element.tags['wikidata']}`;
+                        }
+
+                        pois.push({
+                            name: element.tags.name,
+                            lat: element.lat,
+                            lon: element.lon,
+                            distance: Math.round(distance),
+                            type: Object.keys(element.tags).find(key => 
+                                ['tourism', 'historic', 'amenity', 'leisure', 'shop'].includes(key)
+                            ),
+                            wikipediaLink
+                        });
+                    }
+                });
+
+                // Sort by distance and remove duplicates
+                const uniquePois = pois
+                    .filter((poi, index, self) => 
+                        index === self.findIndex(p => p.name === poi.name)
+                    )
+                    .sort((a, b) => a.distance - b.distance)
+                    .slice(0, 10);
+
+                displayPOIs(uniquePois);
+                updateStatus(`Found ${uniquePois.length} POIs nearby`, 'success');
+
+            } catch (error) {
+                console.error('Error fetching POIs:', error);
+                updateStatus('Error fetching POIs: ' + error.message, 'error');
+            }
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const latDiff = (lat2 - lat1) * 111320;
+            const lonDiff = (lon2 - lon1) * 111320 * Math.cos((lat1 + lat2) * Math.PI / 360);
+            return Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
+        }
+
+        function displayPOIs(pois) {
+            const poiListEl = document.getElementById('poiList');
+            const poiItemsEl = document.getElementById('poiItems');
+            
+            if (pois.length === 0) {
+                poiItemsEl.innerHTML = '<p>No points of interest found nearby</p>';
+            } else {
+                poiItemsEl.innerHTML = pois.map(poi => `
+                    <div class="poi-item">
+                        <div class="poi-name">${poi.name}</div>
+                        <div class="poi-details">
+                            ${poi.distance}m away • ${poi.type || 'Unknown type'}
+                        </div>
+                        ${poi.wikipediaLink ? 
+                            `<a href="${poi.wikipediaLink}" target="_blank" class="poi-link">More Info →</a>` : 
+                            `<a href="https://www.openstreetmap.org/?mlat=${poi.lat}&mlon=${poi.lon}&zoom=18" target="_blank" class="poi-link">View on Map →</a>`
+                        }
+                    </div>
+                `).join('');
+            }
+            
+            poiListEl.style.display = 'block';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html> 

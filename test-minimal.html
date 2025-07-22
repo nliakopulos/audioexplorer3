@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioExplorer Test</title>
+    <style>
+        body {
+            background: linear-gradient(45deg, #ff0000, #00ff00);
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 50px auto;
+        }
+        h1 {
+            color: #ffff00;
+            text-align: center;
+            font-size: 2em;
+        }
+        .warning {
+            background: #ff4444;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 MINIMAL TEST FILE 🚨</h1>
+        <p><strong>This is a standalone HTML file.</strong></p>
+        <p><strong>If you see "Ghost of Main Street" content alongside this, the problem is:</strong></p>
+        <div class="warning">
+            <strong>⚠️ Browser Extension, Antivirus, DNS Hijacking, or Malware!</strong>
+        </div>
+        <p><strong>Expected result:</strong> ONLY this red/green gradient page</p>
+        <p><strong>Time:</strong> <span id="time"></span></p>
+        <p><strong>URL:</strong> <span id="url"></span></p>
+        
+        <h2>✅ Checklist if you see other content:</h2>
+        <ul>
+            <li>Disable ALL browser extensions</li>
+            <li>Try different browser (Edge, Firefox)</li>
+            <li>Check antivirus web protection</li>
+            <li>Check DNS settings</li>
+        </ul>
+    </div>
+
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString();
+        document.getElementById('url').textContent = window.location.href;
+        
+        // Log to console
+        console.log('🚨 MINIMAL TEST - If you see Ghost of Main Street, it is NOT from this file!');
+        console.log('URL:', window.location.href);
+        console.log('Time:', new Date().toISOString());
+    </script>
+</body>
+</html> 
